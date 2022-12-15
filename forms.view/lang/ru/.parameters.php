@@ -1,0 +1,3 @@
+<?
+$MESS["KBNET_FORMS_VIEW"] = "Имя COOKIE";
+?>
