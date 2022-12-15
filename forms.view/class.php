@@ -34,17 +34,27 @@ class KbnetFormsView extends \CBitrixComponent
                 "NAME" => array(
                     "NAME" => 'NAME',
                     "LABEL" => 'Имя',
-                    "REQUIRED" => 'Y',
+                    //"REQUIRED" => 'Y',
                     "TYPE" => 'text',
                     "PLACEHOLDER" => '',
                     "DEFAULT_VALUE" => '',
                     //"ID" => ,
                 ),
-                "DESCRIPTION" => array(
-                    "NAME" => 'DESCRIPTION',
+                "EMAIL" => array(
+                    "NAME" => 'EMAIL',
+                    "LABEL" => 'Email',
+                    //"REQUIRED" => 'Y',
+                    "TYPE" => 'text',
+                    "PLACEHOLDER" => '',
+                    "DEFAULT_VALUE" => '',
+                    //"ID" => ,
+                ),
+                "MESSAGE" => array(
+                    "NAME" => 'MESSAGE',
                     "LABEL" => 'Сообщение',
                     //"REQUIRED" => 'Y',
                     "TYPE" => 'textarea',
+                    "ROWS" => 5,
                     //"PLACEHOLDER" => '',
                     "DEFAULT_VALUE" => '',
                     //"ID" => ,
@@ -58,11 +68,101 @@ class KbnetFormsView extends \CBitrixComponent
         );
     }
 
+    protected function isFieldsCorrect()
+    {
+        return true;
+    }
 
     /**
-     * Получение результатов
+     * @return false|void
+     * Пока запись в инфоблок только текстовых полей
      */
-    protected function getResult()
+    protected function saveFormValues()
+    {
+        if ($this->arParams['ID_IBLOCK'] > 0)
+        {
+            $el = new \CIBlockElement;
+
+            $prop = array();
+            foreach ($this->arResult['FIELDS'] as $arField)
+            {
+                if ($arField['TYPE'] == 'text')
+                {
+                    $prop[$arField['NAME']] = $arField['VALUE'];
+                }
+            }
+
+            $arLoadProductArray = Array(
+                "IBLOCK_ID"      => $this->arParams['ID_IBLOCK'],
+                "PROPERTY_VALUES"=> $prop,
+                "NAME"           => $prop['NAME'] . ' ' . date("Y-m-d H:i:s"),
+                "ACTIVE"         => "Y",            // активен
+                "PREVIEW_TEXT"   => \Bitrix\Main\Web\Json::encode($this->arResult['FIELDS']),
+            );
+
+            if ($productId = $el->Add($arLoadProductArray))
+            {
+                $this->arResult['ID_NEW_ELEMENT'] = $productId;
+                $this->arResult['MESSAGE'] = 'Ваше сообщение отправлено!';
+                $this->clearFieldsValues();
+                return true;
+            }
+            else
+            {
+                $this->arResult['ERROR_SAVE_RECORD'] = $el->LAST_ERROR;
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    protected function clearFieldsValues()
+    {
+        foreach ($this->arResult['FIELDS'] as &$arField)
+        {
+            $arField['VALUE'] = '';
+        }
+    }
+
+    protected function sendFormValues()
+    {
+    }
+
+    /**
+     * Проверяем был ли POST-запрос и обрабатываем его
+     */
+    protected function isPostRequest()
+    {
+        $request = Application::getInstance()->getContext()->getRequest();
+        $this->arResult['IS_REQUEST'] = ($request->isPost())? "Y":"N";
+
+        if (($this->arResult['IS_REQUEST'] == 'Y' && (check_bitrix_sessid())))
+        {
+            $arPost = $request->getPostList()->toArray();
+            foreach ($this->arResult['FIELDS'] as &$arField)
+            {
+                if (array_key_exists($arField['NAME'], $arPost))
+                {
+                    $arField['VALUE'] = $arPost[$arField['NAME']];
+                }
+            }
+            //-- проверяем корректность полей
+            if ( $this->isFieldsCorrect() )
+            {
+                $this->saveFormValues();
+                $this->sendFormValues();
+            }
+        }
+        
+        $this->arParams['REQUEST'] = $arPost;
+    }
+
+
+    /**
+     * Получаем параметры формы
+     */
+    protected function getForm()
     {
         $this->arResult['NAME'] = $this->arParams['AR_FORM']['NAME'];
         $this->arResult['HEADER'] = $this->arParams['AR_FORM']['HEADER'];
@@ -77,6 +177,14 @@ class KbnetFormsView extends \CBitrixComponent
 
     }
 
+   /**
+     * Получение результатов
+     */
+    protected function getResult()
+    {
+
+    }
+
 
 	/**
 	 * Выполняет логику работы компонента
@@ -86,6 +194,8 @@ class KbnetFormsView extends \CBitrixComponent
 		try
 		{
 			$this->setSefDefaultParams();
+            $this->getForm();
+            $this->isPostRequest();
 			$this->getResult();
             $this->includeComponentTemplate();
 		}
