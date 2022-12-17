@@ -11,20 +11,29 @@
                 <?=$arResult['MESSAGE'];?>
             </div>
         <?endif;?>
+        <?if (!empty($arResult['ERROR_SAVE_RECORD'])):?>
+            <div class="alert alert-danger" role="alert">
+                <?=$arResult['ERROR_SAVE_RECORD'];?>
+            </div>
+        <?endif;?>
         <?foreach ($arResult['FIELDS'] as $arField):?>
-            <?if($arField['TYPE'] == 'textarea'):?>
-                <!-- Textarea -->
-                <div class="mb-3">
-                <label for="<?=$arField['ID'];?>" class="form-label"><?=$arField['LABEL'];?></label>
-                <textarea name="<?=$arField['NAME'];?>" class="form-control" id="<?=$arField['ID'];?>" rows="<?=$arField['ROWS'];?>"><?=$arField['VALUE'];?></textarea>
-                </div>
-            <?else:?>
-                <?//--если неопознанный тип, то обрабатываем как текстовый ?>
+            <?if($arField['TYPE'] == 'text'):?>
                 <div class="mb-3">
                     <label for="<?=$arField['ID'];?>" class="form-label"><?=$arField['LABEL'];?></label>
                     <input name="<?=$arField['NAME'];?>" type="text" value="<?=$arField['VALUE'];?>" class="form-control" id="<?=$arField['ID'];?>"<?=($arField['REQUIRED'] == 'Y')?' required
     ':'';?>>
                 </div>
+            <?elseif($arField['TYPE'] == 'textarea'):?>
+                <!-- Textarea -->
+                <div class="mb-3">
+                <label for="<?=$arField['ID'];?>" class="form-label"><?=$arField['LABEL'];?></label>
+                <textarea name="<?=$arField['NAME'];?>" class="form-control" id="<?=$arField['ID'];?>" rows="<?=$arField['ROWS'];?>"<?=($arField['REQUIRED'] == 'Y')?' required
+    ':'';?>><?=$arField['VALUE'];?></textarea>
+                </div>
+            <?elseif($arField['TYPE'] == 'hidden'):?>
+                <input type="hidden" name="<?=$arField['NAME'];?>" value="<?=$arField['VALUE'];?>">
+            <?else:?>
+                <?//--если неопознанный тип... ?>
             <?endif;?>
         <?endforeach;?>
         <button type="submit" class="btn btn-primary"><?=$arResult['BUTTONS']['SUBMIT']['TEXT'];?></button>
